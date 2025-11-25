@@ -7,11 +7,8 @@ import fastmcp
 app = FastAPI(title="MCP Server API")
 mcp = FastMCP("mcp-server")
 
-# Allow HTTP/SSE transports to work without session negotiation
+# Allow Streamable HTTP transport to work without session negotiation
 fastmcp.settings.stateless_http = True
-
-# Mount MCP server on the FastAPI app to share the same port
-app.mount("/mcp", mcp.http_app())
 
 
 # Shared payload for every surface (REST + MCP tool)
@@ -30,7 +27,7 @@ async def read_file() -> str:
 
 
 def read_file_mcp() -> str:
-    """MCP tool; reachable over SSE transport."""
+    """MCP tool; reachable over Streamable HTTP transport."""
     return _get_static_text()
 
 
@@ -41,9 +38,21 @@ mcp.tool()(read_file_mcp)
 
 if __name__ == "__main__":
     import uvicorn
+    import asyncio
+    import sys
 
-    # Use 0.0.0.0 to allow remote connections via SSE
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Check if we should run Streamable HTTP server or FastAPI app
+    if "--streamable-http" in sys.argv or "--http" in sys.argv:
+        # Run Streamable HTTP server
+        async def run_server():
+            mcp.settings.host = "0.0.0.0"
+            mcp.settings.port = 8766
+            await mcp.run_streamable_http_async()
+        
+        asyncio.run(run_server())
+    else:
+        # Run FastAPI app
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
 
 
