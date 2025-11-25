@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple FastMCP Client SSE Test with SSL verification support.
+Simple FastMCP Client Streamable HTTP Test with SSL verification support.
 """
 
 import asyncio
@@ -10,7 +10,7 @@ import httpx
 
 
 async def main():
-    """Test FastMCP client with SSE transport."""
+    """Test FastMCP client with Streamable HTTP transport."""
     
     # Check SSL verification first (before parsing URL)
     verify_ssl = os.getenv("SSL_VERIFY", "true").lower() != "false"
@@ -19,14 +19,14 @@ async def main():
         sys.argv.remove("--no-ssl-verify")
     
     # Get server URL (after removing flags)
-    server_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8766/sse"
+    server_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8766/mcp"
     
     print(f"Connecting to: {server_url}")
     print(f"SSL Verification: {'Enabled' if verify_ssl else 'Disabled'}\n")
     
     try:
         from fastmcp import Client
-        from fastmcp.client.transports import SSETransport
+        from fastmcp.client.transports import StreamableHttpTransport
         
         # Create transport with SSL configuration
         if not verify_ssl:
@@ -35,12 +35,12 @@ async def main():
                 kwargs['verify'] = False
                 return httpx.AsyncClient(**kwargs)
             
-            transport = SSETransport(
+            transport = StreamableHttpTransport(
                 url=server_url,
                 httpx_client_factory=create_client
             )
         else:
-            transport = SSETransport(url=server_url)
+            transport = StreamableHttpTransport(url=server_url)
         
         # Connect and test
         client = Client(transport)
